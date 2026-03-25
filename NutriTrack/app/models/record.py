@@ -2,6 +2,7 @@ from app import db
 from datetime import datetime
 import json
 
+
 class Plate(db.Model):
     __tablename__ = 'plate'
     plate_id = db.Column(db.String(50), primary_key=True)
@@ -51,3 +52,28 @@ class DietHabit(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     habit_content = db.Column(db.Text)
     create_time = db.Column(db.DateTime, default=datetime.now)
+
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+class DishRating(db.Model):
+    """
+    用户对菜品的隐式/显式反馈：
+    rating: -1 = 不喜欢, 0 = 中性/撤销, 1 = 喜欢
+    """
+    __tablename__ = 'dish_ratings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dish_id = db.Column(db.String(50), db.ForeignKey('dishes.dish_id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False, default=0)  # -1, 0, 1
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'dish_id', name='uq_user_dish_rating'),
+    )

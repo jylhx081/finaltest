@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}菜品分析{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group">
+            <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('admin.user_manage') }}" class="list-group-item list-group-item-action">用户管理</a>
+            <a href="{{ url_for('admin.detection_records') }}" class="list-group-item list-group-item-action">识别记录</a>
+            <a href="{{ url_for('admin.dish_analytics') }}" class="list-group-item list-group-item-action active">菜品分析</a>
+            <a href="{{ url_for('admin.dish_structure') }}" class="list-group-item list-group-item-action">菜品结构分析</a>
+            <a href="{{ url_for('admin.feedback') }}" class="list-group-item list-group-item-action">用户反馈</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-3">菜品销量分析</h2>
+
+        <!-- 时间范围选择 -->
+        <form class="row g-2 align-items-end mb-4" method="get">
+            <div class="col-auto">
+                <label class="form-label mb-1">统计周期</label>
+                <select name="period" class="form-select form-select-sm">
+                    <option value="day" {{ 'selected' if period == 'day' else '' }}>日</option>
+                    <option value="week" {{ 'selected' if period == 'week' else '' }}>周</option>
+                    <option value="month" {{ 'selected' if period == 'month' else '' }}>月</option>
+                    <option value="quarter" {{ 'selected' if period == 'quarter' else '' }}>季</option>
+                    <option value="year" {{ 'selected' if period == 'year' else '' }}>年</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label mb-1">基准日期</label>
+                <input type="date" name="date" class="form-control form-control-sm"
+                       value="{{ end_date.strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="fas fa-sync-alt me-1"></i>刷新
+                </button>
+                <a href="{{ url_for('admin.dish_analytics', period=period, date=end_date.strftime('%Y-%m-%d'), export=1) }}"
+                   class="btn btn-sm btn-success ms-1">
+                    <i class="fas fa-file-excel me-1"></i>导出销量Excel
+                </a>
+            </div>
+            <div class="col-12 mt-1">
+                <small class="text-muted">统计区间：{{ start_date.strftime('%Y-%m-%d') }} ~ {{ end_date.strftime('%Y-%m-%d') }}</small>
+            </div>
+        </form>
+
+        <!-- 销量排行 -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>菜品销量排行</strong>
+                <small class="text-muted">按出现次数统计（保存用餐记录即视为一次销量）</small>
+            </div>
+            <div class="card-body p-0">
+                {% if ranked_dishes %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>菜品名称</th>
+                                <th class="text-end">销量次数</th>
+                                <th class="text-end">总重量(g)</th>
+                                <th class="text-end">消费人数</th>
+                                <th class="text-end">回头客人数(≥3次)</th>
+                                <th class="text-end">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in ranked_dishes[:50] %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ d.name }}</td>
+                                <td class="text-end">{{ d.orders }}</td>
+                                <td class="text-end">{{ d.total_weight|round(1) }}</td>
+                                <td class="text-end">{{ d.user_count }}</td>
+                                <td class="text-end text-primary">{{ d.repeat_users }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('admin.dish_curve', dish=d.name) }}" class="btn btn-xs btn-outline-secondary">
+                                        销量曲线
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-3 text-center text-muted">当前时间段内暂无用餐记录。</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 菜品搭配分析 -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>菜品搭配分析（购物车分析）</strong>
+                <small class="text-muted">统计经常一起被选择的菜品组合（Top 20）</small>
+            </div>
+            <div class="card-body p-0">
+                {% if top_pairs %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;">#</th>
+                                <th>菜品A</th>
+                                <th>菜品B</th>
+                                <th class="text-end">共同出现次数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in top_pairs %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ p.dish1 }}</td>
+                                <td>{{ p.dish2 }}</td>
+                                <td class="text-end">{{ p.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-3 text-center text-muted">当前时间段内暂无可统计的搭配数据。</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

@@ -8,8 +8,8 @@
     </div>
 
     <!-- 用户信息卡片 -->
-    <div class="row mb-4">
-        <div class="col-12">
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-8">
             <div class="card shadow">
                 <div class="card-body p-4">
                     <div class="row align-items-center">
@@ -43,12 +43,14 @@
     </div>
 
     <!-- 信息卡片 -->
-    <div class="row">
+    <div class="row justify-content-center">
         <!-- 个人信息卡片 -->
-        <div class="col-md-6 mb-4">
+        <div class="col-md-8 mb-4">
             <div class="card shadow h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">个人信息</h6>
+                </div>
                 <div class="card-body p-4">
-                    <h5 class="card-title mb-4">个人信息</h5>
                     <form method="POST" action="{{ url_for('profile.update_info') }}">
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -99,89 +101,9 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">保存个人信息</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- 饮食习惯卡片 -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-body p-4">
-                    <h5 class="card-title mb-4">饮食习惯</h5>
-                    <form method="POST" action="{{ url_for('profile.update_eating_habits') }}">
-                        <div class="mb-3">
-                            <label for="dietary_preference" class="form-label">饮食偏好</label>
-                            <select class="form-select" id="dietary_preference" name="dietary_preference">
-                                <option value="">请选择</option>
-                                <option value="正常饮食" {{ 'selected' if current_user.dietary_preference=='正常饮食' else ''
-                                    }}>正常饮食</option>
-                                <option value="素食" {{ 'selected' if current_user.dietary_preference=='素食' else '' }}>素食
-                                </option>
-                                <option value="低碳水" {{ 'selected' if current_user.dietary_preference=='低碳水' else '' }}>
-                                    低碳水</option>
-                                <option value="高蛋白" {{ 'selected' if current_user.dietary_preference=='高蛋白' else '' }}>
-                                    高蛋白</option>
-                                <option value="低脂肪" {{ 'selected' if current_user.dietary_preference=='低脂肪' else '' }}>
-                                    低脂肪</option>
-                            </select>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">保存个人信息</button>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="allergies" class="form-label">过敏食物</label>
-                            <textarea class="form-control" id="allergies" name="allergies" rows="3"
-                                placeholder="请输入过敏食物，多个以逗号分隔">{{ current_user.allergies if current_user.allergies else '' }}</textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="favorite_foods" class="form-label">喜爱的食物</label>
-                            <textarea class="form-control" id="favorite_foods" name="favorite_foods" rows="3"
-                                placeholder="请输入喜爱的食物，多个以逗号分隔">{{ current_user.favorite_foods if current_user.favorite_foods else '' }}</textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">保存饮食习惯</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- 健康目标卡片 -->
-        <div class="col-md-12 mb-4">
-            <div class="card shadow">
-                <div class="card-body p-4">
-                    <h5 class="card-title mb-4">健康目标</h5>
-                    <form method="POST" action="{{ url_for('profile.update_health_goal') }}">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="health_goal" class="form-label">健康目标</label>
-                                <select class="form-select" id="health_goal" name="health_goal">
-                                    <option value="">请选择</option>
-                                    <option value="减脂" {{ 'selected' if current_user.health_goal=='减脂' else '' }}>减脂
-                                    </option>
-                                    <option value="增肌" {{ 'selected' if current_user.health_goal=='增肌' else '' }}>增肌
-                                    </option>
-                                    <option value="更健康" {{ 'selected' if current_user.health_goal=='更健康' else '' }}>更健康
-                                    </option>
-                                    <option value="维持体重" {{ 'selected' if current_user.health_goal=='维持体重' else '' }}>
-                                        维持体重</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="target_weight" class="form-label">目标体重 (kg)</label>
-                                <input type="number" class="form-control" id="target_weight" name="target_weight"
-                                    value="{{ current_user.target_weight if current_user.target_weight else '' }}"
-                                    min="20" max="200" step="0.1">
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="goal_deadline" class="form-label">目标期限</label>
-                            <input type="date" class="form-control" id="goal_deadline" name="goal_deadline"
-                                value="{{ current_user.goal_deadline.strftime('%Y-%m-%d') if current_user.goal_deadline else '' }}">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">保存健康目标</button>
                     </form>
                 </div>
             </div>

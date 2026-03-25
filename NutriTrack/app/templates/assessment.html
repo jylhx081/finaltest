@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}健康评测{% endblock %}
+
+{% block content %}
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    .step-indicator::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e0e0e0;
+        z-index: 0;
+    }
+    .step {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #999;
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s;
+    }
+    .step.active {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: #fff;
+    }
+    .step.completed {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: #fff;
+    }
+    
+    .range-wrap {
+        position: relative;
+        margin: 0 auto 3rem;
+    }
+    .range {
+        width: 100%;
+    }
+    .bubble {
+        background: var(--primary-color);
+        color: white;
+        padding: 4px 12px;
+        position: absolute;
+        border-radius: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 100%;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    .bubble::after {
+        content: "";
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: var(--primary-color);
+        bottom: -1px;
+        left: 50%;
+    }
+    
+    /* Hide steps initially */
+    .form-step {
+        display: none;
+        animation: fadeIn 0.5s;
+    }
+    .form-step.active {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .gender-card {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    .gender-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .gender-card.selected {
+        border-color: var(--primary-color);
+        background-color: #f0f9f0;
+    }
+</style>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-3 mt-4">
+                <div class="card-body p-5">
+                    <h3 class="text-center mb-4 fw-bold text-success">定制您的专属健康计划</h3>
+                    
+                    <!-- Progress Steps -->
+                    <div class="step-indicator px-5">
+                        <div class="step active" id="step-icon-1">1</div>
+                        <div class="step" id="step-icon-2">2</div>
+                    </div>
+
+                    <form id="assessmentForm" method="POST" action="{{ url_for('auth.assessment') }}">
+                        <!-- Step 1: Basic Info -->
+                        <div class="form-step active" id="step-1">
+                            <h5 class="mb-4 text-center">基本信息</h5>
+                            
+                            <!-- Gender -->
+                            <div class="row mb-4 justify-content-center">
+                                <div class="col-6 col-md-4">
+                                    <div class="card gender-card text-center p-3" onclick="selectGender('Male', this)">
+                                        <i class="fas fa-male fa-3x mb-2 text-primary"></i>
+                                        <div>男</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="card gender-card text-center p-3" onclick="selectGender('Female', this)">
+                                        <i class="fas fa-female fa-3x mb-2 text-danger"></i>
+                                        <div>女</div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="gender" id="genderInput" required>
+                            </div>
+
+                            <!-- Age -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">年龄: <span id="ageVal" class="text-success">25</span> 岁</label>
+                                <input type="range" class="form-range" min="10" max="100" value="25" id="ageRange" name="age" oninput="updateVal('ageVal', this.value)">
+                            </div>
+
+                            <!-- Height -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">身高: <span id="heightVal" class="text-success">170</span> cm</label>
+                                <input type="range" class="form-range" min="100" max="250" value="170" id="heightRange" name="height" oninput="updateVal('heightVal', this.value)">
+                            </div>
+
+                            <!-- Weight -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">当前体重: <span id="weightVal" class="text-success">65</span> kg</label>
+                                <input type="range" class="form-range" min="30" max="200" step="0.5" value="65" id="weightRange" name="weight" oninput="updateVal('weightVal', this.value)">
+                            </div>
+
+                            <div class="text-center mt-5">
+                                <button type="button" class="btn btn-success px-5 rounded-pill" onclick="nextStep(1)">下一步 <i class="fas fa-arrow-right ms-2"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Goals -->
+                        <div class="form-step" id="step-2">
+                            <h5 class="mb-4 text-center">设定目标</h5>
+                            
+                            <!-- Target Weight -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">目标体重: <span id="targetWeightVal" class="text-success">60</span> kg</label>
+                                <input type="range" class="form-range" min="30" max="200" step="0.5" value="60" id="targetWeightRange" name="target_weight" oninput="updateVal('targetWeightVal', this.value)">
+                            </div>
+                            
+                            <!-- Timeframe -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">期望达成时间</label>
+                                <input type="date" class="form-control" id="goalDeadline" name="goal_deadline" required onchange="calculateWeightLoss()">
+                                <div id="weightLossCalc" class="mt-2 text-primary fw-bold" style="display:none;">
+                                    预计每周需减重: <span id="weeklyLossVal">0.0</span> kg
+                                </div>
+                                <small class="text-muted">合理的减重速度建议为每周 0.5-1 kg</small>
+                            </div>
+                            
+                            <!-- Activity Level -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">日常活动强度</label>
+                                <select class="form-select" name="exercise_level">
+                                    <option value="sedentary">久坐不动 (办公室工作，很少运动)</option>
+                                    <option value="light">轻度活动 (每周运动 1-3 次)</option>
+                                    <option value="moderate">中度活动 (每周运动 3-5 次)</option>
+                                    <option value="active">高强度活动 (每周运动 6-7 次)</option>
+                                    <option value="very_active">专业运动员级</option>
+                                </select>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-5">
+                                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="prevStep(2)">上一步</button>
+                                <button type="submit" class="btn btn-success px-5 rounded-pill">完成评测 <i class="fas fa-check ms-2"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateVal(id, val) {
+        document.getElementById(id).innerText = val;
+        if (id === 'weightVal' || id === 'targetWeightVal') {
+            calculateWeightLoss();
+        }
+    }
+
+    function calculateWeightLoss() {
+        const currentWeight = parseFloat(document.getElementById('weightRange').value);
+        const targetWeight = parseFloat(document.getElementById('targetWeightRange').value);
+        const deadlineStr = document.getElementById('goalDeadline').value;
+        
+        if (currentWeight && targetWeight && deadlineStr) {
+            const deadline = new Date(deadlineStr);
+            const today = new Date();
+            const diffTime = Math.abs(deadline - today);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const weeks = diffDays / 7;
+            
+            if (weeks > 0) {
+                const weightDiff = currentWeight - targetWeight;
+                if (weightDiff > 0) {
+                    const weeklyLoss = (weightDiff / weeks).toFixed(1);
+                    document.getElementById('weeklyLossVal').innerText = weeklyLoss;
+                    document.getElementById('weightLossCalc').style.display = 'block';
+                    
+                    if (weeklyLoss > 1.0) {
+                        document.getElementById('weightLossCalc').className = "mt-2 text-danger fw-bold";
+                        document.getElementById('weeklyLossVal').innerText = weeklyLoss + " (过快!)";
+                    } else if (weeklyLoss < 0.5) {
+                        document.getElementById('weightLossCalc').className = "mt-2 text-warning fw-bold";
+                    } else {
+                        document.getElementById('weightLossCalc').className = "mt-2 text-success fw-bold";
+                    }
+                } else {
+                     document.getElementById('weightLossCalc').style.display = 'none';
+                }
+            }
+        }
+    }
+
+    function selectGender(gender, element) {
+        document.getElementById('genderInput').value = gender;
+        document.querySelectorAll('.gender-card').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function nextStep(currentStep) {
+        // Validation
+        if (currentStep === 1) {
+            if (!document.getElementById('genderInput').value) {
+                alert('请选择性别');
+                return;
+            }
+        }
+        
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-${currentStep + 1}`).classList.add('active');
+        
+        document.getElementById(`step-icon-${currentStep + 1}`).classList.add('active');
+    }
+
+    function prevStep(currentStep) {
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-${currentStep - 1}`).classList.add('active');
+        
+        document.getElementById(`step-icon-${currentStep}`).classList.remove('active');
+    }
+</script>
+{% endblock %}

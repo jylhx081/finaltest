@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}菜品销量曲线 - {{ dish_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group">
+            <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('admin.user_manage') }}" class="list-group-item list-group-item-action">用户管理</a>
+            <a href="{{ url_for('admin.detection_records') }}" class="list-group-item list-group-item-action">识别记录</a>
+            <a href="{{ url_for('admin.dish_analytics') }}" class="list-group-item list-group-item-action active">菜品分析</a>
+            <a href="{{ url_for('admin.feedback') }}" class="list-group-item list-group-item-action">用户反馈</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-3">菜品销量曲线：{{ dish_name }}</h2>
+        <p class="text-muted">最近30天内，按早餐 / 午餐 / 晚餐拆分的销量次数变化。</p>
+
+        <div class="card">
+            <div class="card-body">
+                <canvas id="curveChart"></canvas>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <a href="{{ url_for('admin.dish_analytics') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回菜品分析
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const labels = {{ dates|tojson }};
+    const breakfast = {{ breakfast|tojson }};
+    const lunch = {{ lunch|tojson }};
+    const dinner = {{ dinner|tojson }};
+
+    const ctx = document.getElementById('curveChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '早餐',
+                    data: breakfast,
+                    borderColor: '#ff9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                    tension: 0.2,
+                    fill: true
+                },
+                {
+                    label: '午餐',
+                    data: lunch,
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                    tension: 0.2,
+                    fill: true
+                },
+                {
+                    label: '晚餐',
+                    data: dinner,
+                    borderColor: '#2196f3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                    tension: 0.2,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            stacked: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '销量次数'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+

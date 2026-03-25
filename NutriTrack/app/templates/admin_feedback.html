@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}用户反馈{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group">
+            <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('admin.user_manage') }}" class="list-group-item list-group-item-action">用户管理</a>
+            <a href="{{ url_for('admin.detection_records') }}" class="list-group-item list-group-item-action">识别记录</a>
+            <a href="{{ url_for('admin.dish_analytics') }}" class="list-group-item list-group-item-action">菜品分析</a>
+            <a href="{{ url_for('admin.dish_structure') }}" class="list-group-item list-group-item-action">菜品结构分析</a>
+            <a href="{{ url_for('admin.feedback') }}" class="list-group-item list-group-item-action active">用户反馈</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-3">用户反馈与投诉热点</h2>
+
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <strong>投诉热点词云（基于关键字统计）</strong>
+                <small class="text-muted ms-2">字体大小随出现频次增大而增大</small>
+            </div>
+            <div class="card-body">
+                {% if word_cloud %}
+                <div class="border rounded p-3" style="min-height: 160px;">
+                    {% for item in word_cloud %}
+                    <span class="me-2 mb-2 d-inline-block text-primary"
+                          style="font-size: {{ item.font_size }}px;">
+                        {{ item.word }} ({{ item.count }})
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">当前暂无可统计的投诉热点。</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>用户反馈列表</strong>
+                <small class="text-muted">按时间倒序展示最近反馈</small>
+            </div>
+            <div class="card-body p-0">
+                {% if feedbacks %}
+                <div class="list-group list-group-flush">
+                    {% for fb in feedbacks %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="small text-muted mb-1">
+                                    来自用户 ID: {{ fb.user_id }} · {{ fb.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                <div>{{ fb.content|e }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-3 text-center text-muted">尚未收到任何反馈。</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

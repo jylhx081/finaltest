@@ -21,11 +21,13 @@ def create_app(config_class=Config):
     from app.routes.profile import profile_bp
     from app.routes.meal_track import meal_track_bp
     from app.routes.admin import admin_bp
+    from app.routes.statistics import statistics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(meal_track_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(statistics_bp)
 
     return app

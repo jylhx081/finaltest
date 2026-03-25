@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}数据统计{% endblock %}
+
+{% block styles %}
+<style>
+    /* Custom animations */
+    .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Hover effects */
+    .hover-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Chart container */
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .border-success-l {
+        border-left: 4px solid #4caf50;
+    }
+    
+    .border-blue-t {
+        border-top: 4px solid #3b82f6;
+    }
+    .border-yellow-t {
+        border-top: 4px solid #eab308;
+    }
+    .border-orange-t {
+        border-top: 4px solid #f97316;
+    }
+    .border-success-t {
+        border-top: 4px solid #22c55e;
+    }
+
+    .text-success-custom { color: #22c55e; }
+    .bg-success-custom { background-color: #22c55e; }
+    .btn-success-custom { background-color: #22c55e; color: white; border: none; }
+    .btn-success-custom:hover { background-color: #16a34a; color: white; }
+    
+    .active-filter {
+        background-color: #22c55e !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 fade-in">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 border-success-l ps-3 mb-0">数据统计</h1>
+        <div class="text-muted small">最后更新: <span id="lastUpdated">{{ today_date }}</span></div>
+    </div>
+
+    <!-- Time Range Filter -->
+    <div class="card shadow-sm mb-4 hover-card">
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-auto">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('statistics.index', range='week') }}" class="btn btn-outline-secondary {{ 'active-filter' if request.args.get('range', 'week') == 'week' else '' }}">本周</a>
+                        <a href="{{ url_for('statistics.index', range='month') }}" class="btn btn-outline-secondary {{ 'active-filter' if request.args.get('range') == 'month' else '' }}">本月</a>
+                        <a href="{{ url_for('statistics.index', range='quarter') }}" class="btn btn-outline-secondary {{ 'active-filter' if request.args.get('range') == 'quarter' else '' }}">本季度</a>
+                        <a href="{{ url_for('statistics.index', range='year') }}" class="btn btn-outline-secondary {{ 'active-filter' if request.args.get('range') == 'year' else '' }}">本年</a>
+                    </div>
+                </div>
+                
+                <div class="col-md-auto ms-auto">
+                    <form action="{{ url_for('statistics.index') }}" method="GET" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="range" value="custom">
+                        <input type="date" name="start" class="form-control form-control-sm" value="{{ start_date }}" required>
+                        <span class="text-muted">至</span>
+                        <input type="date" name="end" class="form-control form-control-sm" value="{{ end_date }}" required>
+                        <button type="submit" class="btn btn-success-custom btn-sm">
+                            <i class="fas fa-search me-1"></i> 查询
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Overview Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Calories Card -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100 border-success-t hover-card">
+                <div class="card-body position-relative">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fas fa-fire fa-3x text-success"></i>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">总热量</h6>
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <span class="h3 fw-bold mb-0">{{ total_calories }}</span>
+                        <span class="small text-muted">kcal</span>
+                    </div>
+                    <div class="small text-muted mb-3">日均 {{ avg_calories }} kcal</div>
+                    
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="{{ 'text-danger' if cal_change > 0 else 'text-success' }} small fw-bold">
+                            <i class="fas fa-arrow-{{ 'up' if cal_change > 0 else 'down' }} me-1"></i> {{ cal_change | abs }}%
+                            <span class="text-muted fw-normal ms-1">较上期</span>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted mb-1">目标达成</div>
+                            <div class="text-success fw-bold">{{ goal_achievement }}%</div>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ goal_achievement }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protein Card -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100 border-blue-t hover-card">
+                <div class="card-body position-relative">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fas fa-drumstick-bite fa-3x text-primary"></i>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">蛋白质</h6>
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <span class="h3 fw-bold mb-0">{{ total_protein }}</span>
+                        <span class="small text-muted">g</span>
+                    </div>
+                    <div class="small text-muted mb-3">日均 {{ avg_protein }} g</div>
+                    <div class="w-100 bg-light rounded mt-auto" style="height: 6px;">
+                        <div class="bg-primary h-100 rounded" style="width: 70%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carbs Card -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100 border-yellow-t hover-card">
+                <div class="card-body position-relative">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fas fa-bread-slice fa-3x text-warning"></i>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">碳水化合物</h6>
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <span class="h3 fw-bold mb-0">{{ total_carbs }}</span>
+                        <span class="small text-muted">g</span>
+                    </div>
+                    <div class="small text-muted mb-3">日均 {{ avg_carbs }} g</div>
+                    <div class="w-100 bg-light rounded mt-auto" style="height: 6px;">
+                        <div class="bg-warning h-100 rounded" style="width: 60%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fat Card -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card shadow-sm h-100 border-orange-t hover-card">
+                <div class="card-body position-relative">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fas fa-cheese fa-3x text-danger"></i>
+                    </div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-2">脂肪</h6>
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <span class="h3 fw-bold mb-0">{{ total_fat }}</span>
+                        <span class="small text-muted">g</span>
+                    </div>
+                    <div class="small text-muted mb-3">日均 {{ avg_fat }} g</div>
+                    <div class="w-100 bg-light rounded mt-auto" style="height: 6px;">
+                        <div class="bg-danger h-100 rounded" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Area -->
+    <div class="row g-4 mb-4">
+        <!-- Calorie Trend Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm hover-card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">热量趋势</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="calorieTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nutrient Distribution Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm hover-card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">营养素分布</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container d-flex justify-content-center">
+                        <canvas id="nutrientDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meal Distribution Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm hover-card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">餐次热量分布</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="mealDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nutrient Balance Radar Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm hover-card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-secondary">营养均衡分析 (实际 vs 目标 %)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container d-flex justify-content-center">
+                        <canvas id="balanceRadarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Data Table -->
+    <div class="card shadow-sm hover-card">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <h6 class="mb-0 fw-bold text-secondary">详细数据记录</h6>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="alert('导出功能开发中')">
+                    <i class="fas fa-download me-1"></i> 导出
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="ps-4">日期</th>
+                            <th>餐次</th>
+                            <th>菜品</th>
+                            <th>重量 (g)</th>
+                            <th>热量 (kcal)</th>
+                            <th>蛋白质 (g)</th>
+                            <th>脂肪 (g)</th>
+                            <th>碳水 (g)</th>
+                            <th class="text-center pe-4">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for row in table_data %}
+                        <tr>
+                            <td class="ps-4 text-nowrap">{{ row.date }}</td>
+                            <td>
+                                {% if row.meal_type == '早餐' %}
+                                <span class="badge bg-warning text-dark bg-opacity-25">{{ row.meal_type }}</span>
+                                {% elif row.meal_type == '午餐' %}
+                                <span class="badge bg-success bg-opacity-25 text-success">{{ row.meal_type }}</span>
+                                {% elif row.meal_type == '晚餐' %}
+                                <span class="badge bg-primary bg-opacity-25 text-primary">{{ row.meal_type }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ row.meal_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-medium text-truncate" style="max-width: 150px;" title="{{ row.dish_name }}">{{ row.dish_name }}</td>
+                            <td>{{ row.weight }}</td>
+                            <td>{{ row.calories }}</td>
+                            <td>{{ row.protein }}</td>
+                            <td>{{ row.fat }}</td>
+                            <td>{{ row.carbs }}</td>
+                            <td class="text-center pe-4">
+                                <button class="btn btn-link text-danger p-0" onclick="deleteRecord({{ row.id }})">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fas fa-utensils fa-2x mb-3 d-block opacity-25"></i>
+                                暂无数据，快去记录今天的饮食吧！
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Pagination (Static for now, can be implemented via backend logic if needed) -->
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                    共 {{ table_data|length }} 条记录
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. 热量趋势图 (Line Chart) ---
+        const ctxCalorie = document.getElementById('calorieTrendChart').getContext('2d');
+        new Chart(ctxCalorie, {
+            type: 'line',
+            data: {
+                labels: {{ trend_labels | tojson }},
+                datasets: [
+                    {
+                        label: '实际摄入',
+                        data: {{ trend_data | tojson }},
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#4caf50',
+                        pointRadius: 4
+                    },
+                    {
+                        label: '目标摄入',
+                        data: {{ trend_goal | tojson }},
+                        borderColor: '#9e9e9e',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, boxWidth: 6 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 2] }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // --- 2. 营养素分布 (Doughnut Chart) ---
+        const ctxNutrient = document.getElementById('nutrientDistChart').getContext('2d');
+        new Chart(ctxNutrient, {
+            type: 'doughnut',
+            data: {
+                labels: ['蛋白质', '脂肪', '碳水'],
+                datasets: [{
+                    data: [{{ total_protein }}, {{ total_fat }}, {{ total_carbs }}],
+                    backgroundColor: [
+                        '#3b82f6', // Blue
+                        '#f97316', // Orange
+                        '#eab308'  // Yellow
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 }
+                    }
+                }
+            }
+        });
+
+        // --- 3. 餐次热量分布 (Bar Chart) ---
+        const ctxMeal = document.getElementById('mealDistChart').getContext('2d');
+        new Chart(ctxMeal, {
+            type: 'bar',
+            data: {
+                labels: ['早餐', '午餐', '晚餐', '加餐'],
+                datasets: [{
+                    label: '热量 (kcal)',
+                    data: {{ meal_data | tojson }},
+                    backgroundColor: [
+                        'rgba(234, 179, 8, 0.7)',  // Yellow (Morning)
+                        'rgba(34, 197, 94, 0.7)',  // Green (Noon)
+                        'rgba(59, 130, 246, 0.7)', // Blue (Evening)
+                        'rgba(168, 85, 247, 0.7)'  // Purple (Snack)
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 2] }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // --- 4. 营养均衡分析 (Radar Chart) ---
+        const ctxBalance = document.getElementById('balanceRadarChart').getContext('2d');
+        new Chart(ctxBalance, {
+            type: 'radar',
+            data: {
+                labels: {{ radar_labels | tojson }},
+                datasets: [{
+                    label: '目标达成率 (%)',
+                    data: {{ radar_actual | tojson }},
+                    fill: true,
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderColor: '#22c55e',
+                    pointBackgroundColor: '#22c55e',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#22c55e'
+                }, {
+                    label: '标准线 (100%)',
+                    data: [100, 100, 100],
+                    fill: false,
+                    borderColor: '#9ca3af',
+                    pointRadius: 0,
+                    borderDash: [5, 5]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                    line: { borderWidth: 2 }
+                },
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 120,
+                        ticks: {
+                            callback: function(value) { return value + '%' } 
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    function deleteRecord(id) {
+        if(confirm('确定要删除这条记录吗？')) {
+            fetch(`/meal/delete_record/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

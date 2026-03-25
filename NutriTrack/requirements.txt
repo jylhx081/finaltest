@@ -3,5 +3,6 @@ Flask-SQLAlchemy
 Flask-Login
 pymysql
 ultralytics
+xlsxwriter
 # requests # implicitly used
 # pillow # implicitly used

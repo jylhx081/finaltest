@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}菜品结构与销量曲线{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="list-group">
+            <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">仪表盘</a>
+            <a href="{{ url_for('admin.user_manage') }}" class="list-group-item list-group-item-action">用户管理</a>
+            <a href="{{ url_for('admin.detection_records') }}" class="list-group-item list-group-item-action">识别记录</a>
+            <a href="{{ url_for('admin.dish_analytics') }}" class="list-group-item list-group-item-action">菜品分析</a>
+            <a href="{{ url_for('admin.dish_structure') }}" class="list-group-item list-group-item-action active">菜品结构分析</a>
+            <a href="{{ url_for('admin.feedback') }}" class="list-group-item list-group-item-action">用户反馈</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-3">菜品结构占比 & 单菜品销量曲线</h2>
+
+        <!-- 1. 菜品分类占比（基于菜品库） -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>菜品分类占比（基于菜品库）</strong>
+                <small class="text-muted">样本为当前菜品库中的所有菜品，而非实际销量</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted mb-2">按烹饪方式（蒸/煮/炒/炸）</h6>
+                        <canvas id="cookChart"></canvas>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted mb-2">按食材类型（红肉/白肉/蔬菜/碳水）</h6>
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 单个菜品销量曲线（近一个月，早餐/午餐/晚餐三条线） -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>单个菜品销量曲线（近30天）</strong>
+                <small class="text-muted">从菜品库中选择任意菜品，查看其早/午/晚餐的销量趋势</small>
+            </div>
+            <div class="card-body">
+                <form class="row g-2 align-items-end mb-3" method="get">
+                    <div class="col-md-6">
+                        <label class="form-label mb-1">选择菜品</label>
+                        <select name="dish" class="form-select form-select-sm">
+                            <option value="">请选择菜品...</option>
+                            {% for name in dish_names %}
+                            <option value="{{ name }}" {{ 'selected' if selected_dish == name else '' }}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">最近天数</label>
+                        <select name="days" class="form-select form-select-sm">
+                            {% for d in [7, 14, 30] %}
+                            <option value="{{ d }}" {{ 'selected' if days == d else '' }}>近 {{ d }} 天</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fas fa-chart-line me-1"></i>查看销量曲线
+                        </button>
+                    </div>
+                </form>
+
+                {% if selected_dish and dates %}
+                <p class="text-muted small mb-2">
+                    当前菜品：<strong>{{ selected_dish }}</strong>，统计区间：最近 {{ days }} 天
+                </p>
+                <canvas id="curveChart"></canvas>
+                {% elif selected_dish %}
+                <p class="text-muted mb-0">最近 {{ days }} 天内，尚未记录到菜品 <strong>{{ selected_dish }}</strong> 的销量。</p>
+                {% else %}
+                <p class="text-muted mb-0">请先从上方下拉框中选择一个菜品，然后点击“查看销量曲线”。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. 菜品结构占比（基于菜品库）
+    const cookLabels = {{ cooking_labels|tojson }};
+    const cookValues = {{ cooking_values|tojson }};
+    const cookCtx = document.getElementById('cookChart').getContext('2d');
+    if (cookLabels.length > 0) {
+        new Chart(cookCtx, {
+            type: 'pie',
+            data: {
+                labels: cookLabels,
+                datasets: [{
+                    data: cookValues,
+                    backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9e9e9e']
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    const typeLabels = {{ ing_labels|tojson }};
+    const typeValues = {{ ing_values|tojson }};
+    const typeCtx = document.getElementById('typeChart').getContext('2d');
+    if (typeLabels.length > 0) {
+        new Chart(typeCtx, {
+            type: 'pie',
+            data: {
+                labels: typeLabels,
+                datasets: [{
+                    data: typeValues,
+                    backgroundColor: ['#e53935', '#ffc107', '#4caf50', '#2196f3', '#9e9e9e']
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // 2. 单菜品销量曲线
+    const selectedDish = "{{ selected_dish or '' }}";
+    if (selectedDish) {
+        const labels = {{ dates|tojson }};
+        const breakfast = {{ breakfast|tojson }};
+        const lunch = {{ lunch|tojson }};
+        const dinner = {{ dinner|tojson }};
+        const ctx = document.getElementById('curveChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '早餐',
+                        data: breakfast,
+                        borderColor: '#ff9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                        tension: 0.2,
+                        fill: true
+                    },
+                    {
+                        label: '午餐',
+                        data: lunch,
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                        tension: 0.2,
+                        fill: true
+                    },
+                    {
+                        label: '晚餐',
+                        data: dinner,
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                        tension: 0.2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                stacked: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '销量次数'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
+

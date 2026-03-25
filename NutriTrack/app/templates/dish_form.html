@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if not dish %}
+                    {% if current_user.is_admin == 1 %}
+                    <div class="alert alert-info mb-3 py-2"><i class="fas fa-info-circle me-1"></i>添加后该菜品为<strong>全局菜品</strong>，所有用户可见。</div>
+                    {% else %}
+                    <div class="alert alert-secondary mb-3 py-2"><i class="fas fa-user me-1"></i>添加后该菜品为<strong>个人菜品</strong>，仅您本人可见。</div>
+                    {% endif %}
+                    {% endif %}
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">菜品名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                value="{{ dish.name if dish else '' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cooking_method" class="form-label">烹饪方式</label>
+                            <input type="text" class="form-control" id="cooking_method" name="cooking_method"
+                                value="{{ dish.cooking_method if dish else '' }}" placeholder="例如：炒、蒸、煮">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="canteen_id" class="form-label">所属食堂</label>
+                            <select class="form-select" id="canteen_id" name="canteen_id">
+                                <option value="">请选择食堂</option>
+                                {% for canteen in canteens %}
+                                <option value="{{ canteen.canteen_id }}" {{ 'selected' if dish and
+                                    dish.canteen_id==canteen.canteen_id else '' }}>
+                                    {{ canteen.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="unit_type" class="form-label">计量方式</label>
+                                <select class="form-select" id="unit_type" name="unit_type">
+                                    <option value="portion" {{ 'selected' if not dish or dish.unit_type=='portion'
+                                        else '' }}>按重量 (克)</option>
+                                    <option value="piece" {{ 'selected' if dish and dish.unit_type=='piece' else '' }}>
+                                        按数量 (个)</option>
+                                    <option value="slice" {{ 'selected' if dish and dish.unit_type=='slice' else '' }}>
+                                        按片 (片)</option>
+                                    <option value="stick" {{ 'selected' if dish and dish.unit_type=='stick' else '' }}>
+                                        按根 (根)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="unit_weight" class="form-label">单个/单份重量 (g)</label>
+                                <input type="number" step="0.1" class="form-control" id="unit_weight" name="unit_weight"
+                                    value="{{ dish.unit_weight if dish else '100' }}">
+                                <div class="form-text">如果是按数量计量，请输入单个的平均重量。</div>
+                            </div>
+                        </div>
+
+                        <!-- 新增：直接输入营养信息的字段 -->
+                        <div class="border-top pt-3 mt-3">
+                            <h5 class="mb-3">营养信息（每100g）</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="calories_per_100g" class="form-label">卡路里 (kcal)</label>
+                                    <input type="number" step="0.1" class="form-control" id="calories_per_100g"
+                                        name="calories_per_100g"
+                                        value="{{ dish.calories_per_100g if dish and dish.calories_per_100g else '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="protein_per_100g" class="form-label">蛋白质 (g)</label>
+                                    <input type="number" step="0.1" class="form-control" id="protein_per_100g"
+                                        name="protein_per_100g"
+                                        value="{{ dish.protein_per_100g if dish and dish.protein_per_100g else '' }}">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label for="fat_per_100g" class="form-label">脂肪 (g)</label>
+                                    <input type="number" step="0.1" class="form-control" id="fat_per_100g"
+                                        name="fat_per_100g"
+                                        value="{{ dish.fat_per_100g if dish and dish.fat_per_100g else '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="carb_per_100g" class="form-label">碳水化合物 (g)</label>
+                                    <input type="number" step="0.1" class="form-control" id="carb_per_100g"
+                                        name="carb_per_100g"
+                                        value="{{ dish.carb_per_100g if dish and dish.carb_per_100g else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">描述</label>
+                            <textarea class="form-control" id="description" name="description"
+                                rows="3">{{ dish.description if dish else '' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('meal_track.dish_library') }}" class="btn btn-outline-secondary">返回</a>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

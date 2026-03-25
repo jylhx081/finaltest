@@ -2,50 +2,25 @@
 
 {% block title %}用餐追踪{% endblock %}
 
+{% block styles %}
+<style>
+    /* Hide number input spinners */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-12">
             <h2 class="mb-3"><i class="fas fa-utensils me-2"></i>用餐追踪</h2>
-        </div>
-    </div>
-
-    <!-- 取餐监控区域 -->
-    <div class="card mb-5">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0 fw-bold">取餐监控</h5>
-            <div class="d-flex align-items-center">
-                <span class="me-3">状态: <span class="text-success fw-bold">正在取餐</span></span>
-                <button class="btn btn-outline-secondary btn-sm" id="pauseBtn">暂停取餐</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 border-end">
-                    <h6 class="text-muted mb-3">重量变化记录</h6>
-                    <div class="list-group list-group-flush" id="weightLog" style="height: 300px; overflow-y: auto;">
-                        <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span class="text-muted">12:05</span>
-                            <span class="text-success fw-bold">+120g</span>
-                        </div>
-                        <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span class="text-muted">12:07</span>
-                            <span class="text-success fw-bold">+80g</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <h6 class="text-muted mb-3">实时重量图表</h6>
-                    <div style="height: 300px;">
-                        <canvas id="weightChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <button class="btn btn-success btn-lg px-5" id="finishMealBtn">
-                    <i class="fas fa-check-circle me-2"></i>完成取餐
-                </button>
-            </div>
         </div>
     </div>
 
@@ -59,34 +34,42 @@
                     <h5 class="mb-3">上传餐盘图片</h5>
                     <div class="text-center mb-4">
                         <!-- 图片预览区域 -->
-                        <div id="imagePreview" class="border border-dashed border-2 rounded-3 p-4 mb-3" style="height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
+                        <div id="imagePreview" class="border border-dashed border-2 rounded-3 p-4 mb-3"
+                            style="height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;">
                             <i class="fas fa-camera fa-3x text-muted mb-2"></i>
                             <p class="text-muted">点击拍照或上传图片</p>
                             <p class="text-xs text-muted">请拍摄清晰、无遮挡的餐盘全景</p>
-                            <input type="file" id="dishImage" accept="image/*" style="display: none;" onchange="previewImage(this)">
-                            
+                            <input type="file" id="dishImage" accept="image/*" style="display: none;"
+                                onchange="previewImage(this)">
+
                             <!-- 摄像头视频区域 -->
-                            <video id="video" width="100%" style="max-width: 400px; border-radius: 8px; display:none;" autoplay></video>
+                            <video id="video" width="100%" style="max-width: 400px; border-radius: 8px; display:none;"
+                                autoplay></video>
                             <canvas id="canvas" style="display:none;"></canvas>
                         </div>
-                        
+
                         <!-- 操作按钮 -->
                         <div class="d-flex justify-content-center gap-3">
                             <button class="btn btn-outline-primary" id="cameraBtn" onclick="toggleCamera()">
                                 <i class="fas fa-camera me-1"></i>拍照
                             </button>
-                            <button class="btn btn-outline-secondary" onclick="document.getElementById('dishImage').click()">
+                            <button class="btn btn-outline-secondary"
+                                onclick="document.getElementById('dishImage').value = ''; document.getElementById('dishImage').click()">
                                 <i class="fas fa-upload me-1"></i>上传
                             </button>
+                            <button class="btn btn-outline-info" onclick="openSearchModal()">
+                                <i class="fas fa-plus me-1"></i>手动添加
+                            </button>
                         </div>
-                        
+
                         <!-- 拍照按钮（仅在摄像头开启时显示） -->
-                        <button class="btn btn-primary mt-3" id="captureBtn" style="display:none;" onclick="captureAndDetect()">
+                        <button class="btn btn-primary mt-3" id="captureBtn" style="display:none;"
+                            onclick="captureAndDetect()">
                             <i class="fas fa-camera me-1"></i>拍摄并识别
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- 右侧：识别结果区域 -->
                 <div class="col-md-6">
                     <h5 class="mb-3">识别结果</h5>
@@ -101,16 +84,17 @@
                             <!-- 动态生成的菜品卡片 -->
                         </div>
                     </div>
-                    
+
                     <!-- 确认按钮 -->
                     <div class="text-center">
-                        <button class="btn btn-success btn-lg" id="confirmResultsBtn" style="display: none;" onclick="showNutritionSummary()">
+                        <button class="btn btn-success btn-lg" id="confirmResultsBtn" style="display: none;"
+                            onclick="showNutritionSummary()">
                             <i class="fas fa-check me-2"></i>确认识别结果
                         </button>
                     </div>
                 </div>
             </div>
-            
+
             <!-- 营养总结和保存区域（默认隐藏） -->
             <div id="nutritionSummary" class="mt-5" style="display: none;">
                 <div class="card bg-light border-0">
@@ -134,9 +118,13 @@
                                 <div class="text-muted">碳水化合物</div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label for="mealDate" class="form-label">用餐日期</label>
+                                <input type="date" class="form-control" id="mealDate">
+                            </div>
+                            <div class="col-md-4">
                                 <label for="mealType" class="form-label">用餐时段</label>
                                 <select class="form-select" id="mealType">
                                     <option value="1">早餐</option>
@@ -144,12 +132,53 @@
                                     <option value="3">晚餐</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 d-flex align-items-end">
+                            <div class="col-md-4 d-flex align-items-end">
                                 <button class="btn btn-success w-100 py-2" onclick="saveRecord()">
                                     <i class="fas fa-save me-2"></i>保存用餐记录
                                 </button>
                             </div>
                         </div>
+
+                        <!-- 菜品详情列表 -->
+                        <div class="mt-4">
+                            <h6 class="border-bottom pb-2 mb-3">菜品明细</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>菜品名称</th>
+                                            <th class="text-end">重量(g)</th>
+                                            <th class="text-end">热量(kcal)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dishDetailsTable">
+                                        <!-- 动态生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 菜品搜索模态框 -->
+    <div class="modal fade" id="searchDishModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">搜索菜品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="dishSearchInput" placeholder="输入菜品名称..."
+                            onkeyup="if(event.keyCode===13) searchDishes()">
+                        <button class="btn btn-outline-primary" type="button" onclick="searchDishes()">搜索</button>
+                    </div>
+                    <div id="searchResults" class="list-group">
+                        <!-- 搜索结果 -->
                     </div>
                 </div>
             </div>
@@ -162,30 +191,98 @@
 <!-- 引入Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // ========== 重量图表初始化 ==========
-    const weightCtx = document.getElementById('weightChart').getContext('2d');
-    const weightChart = new Chart(weightCtx, {
-        type: 'line',
-        data: {
-            labels: ['12:00', '12:05', '12:07', '12:09', '12:10'],
-            datasets: [{
-                label: '重量 (g)',
-                data: [0, 120, 200, 250, 350],
-                borderColor: '#4caf50',
-                backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
+    // ========== 搜索与手动添加逻辑 ==========
+    let replacingIndex = null;
+    let searchModal = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        searchModal = new bootstrap.Modal(document.getElementById('searchDishModal'));
+        
+        // Initialize date picker to today
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        document.getElementById('mealDate').value = `${year}-${month}-${day}`;
     });
 
+    function openSearchModal(query = '', index = null) {
+        document.getElementById('dishSearchInput').value = query;
+        document.getElementById('searchResults').innerHTML = '';
+        replacingIndex = index;
+        searchModal.show();
+        if (query) {
+            searchDishes();
+        }
+    }
+
+    function searchDishes() {
+        const query = document.getElementById('dishSearchInput').value.trim();
+        if (!query) return;
+
+        fetch(`{{ url_for('meal_track.search_dishes') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('searchResults');
+                list.innerHTML = '';
+                if (data.results.length === 0) {
+                    list.innerHTML = '<div class="text-muted text-center py-3">未找到相关菜品</div>';
+                    return;
+                }
+                data.results.forEach(dish => {
+                    const item = document.createElement('button');
+                    item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    item.innerHTML = `
+                        <div>
+                            <div class="fw-bold">${dish.name}</div>
+                            <small class="text-muted">${dish.description || ''}</small>
+                        </div>
+                        <i class="fas fa-plus text-primary"></i>
+                    `;
+                    item.onclick = () => selectDish(dish);
+                    list.appendChild(item);
+                });
+            });
+    }
+
+    function selectDish(dish) {
+        // Determine default weight based on unit type
+        const unitWeight = dish.unit_weight || 100;
+        const defaultWeight = unitWeight > 0 ? unitWeight : 100;
+
+        const newDish = {
+            dish_name: dish.name,
+            confidence: 1.0,
+            weight: defaultWeight,
+            unit_type: dish.unit_type || 'portion',
+            unit_weight: unitWeight,
+            has_db_data: true,
+            nutrition: dish.nutrition
+        };
+
+        if (replacingIndex !== null) {
+            // Keep original weight only if it makes sense (e.g. same unit type)
+            // But user likely wants the default for the new dish, so let's use the new default
+            // unless we want to be smart. For now, let's use the new default to be safe and consistent.
+            currentDishes[replacingIndex] = newDish;
+        } else {
+            currentDishes.push(newDish);
+        }
+
+        displayResults(currentDishes);
+        searchModal.hide();
+        replacingIndex = null;
+    }
+
+    function handleUnknownClick(index) {
+        const dish = currentDishes[index];
+        // 弹出提示
+        if (confirm(`暂无"${dish.dish_name}"的营养数据，请手动输入或选择相近菜品。\n是否立即搜索相近菜品？`)) {
+            openSearchModal(dish.dish_name, index);
+        }
+    }
+</script>
+<script>
     // ========== 摄像头逻辑 ==========
     let videoStream = null;
     const video = document.getElementById('video');
@@ -208,7 +305,7 @@
                 video.style.display = 'block';
                 captureBtn.style.display = 'inline-block';
                 cameraBtn.innerHTML = '<i class="fas fa-times me-1"></i>关闭摄像头';
-                
+
                 // 隐藏默认预览
                 const previewElements = imagePreview.querySelectorAll('i, p');
                 previewElements.forEach(el => el.style.display = 'none');
@@ -225,7 +322,7 @@
             videoStream.getTracks().forEach(track => track.stop());
             video.style.display = 'none';
             captureBtn.style.display = 'none';
-            
+
             // 恢复默认预览
             const previewElements = imagePreview.querySelectorAll('i, p');
             previewElements.forEach(el => el.style.display = 'block');
@@ -236,23 +333,23 @@
     function previewImage(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            
+
             // 关闭摄像头（如果开启）
             stopCamera();
             cameraBtn.innerHTML = '<i class="fas fa-camera me-1"></i>拍照';
-            
+
             // 隐藏默认预览
             const previewElements = imagePreview.querySelectorAll('i, p');
             previewElements.forEach(el => el.style.display = 'none');
-            
+
             // 创建预览图片
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 // 移除之前的预览图片
                 const existingImg = imagePreview.querySelector('img');
                 if (existingImg) {
                     existingImg.remove();
                 }
-                
+
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.style.maxWidth = '100%';
@@ -260,11 +357,11 @@
                 img.style.objectFit = 'contain';
                 img.style.borderRadius = '8px';
                 imagePreview.appendChild(img);
-                
+
                 // 识别菜品
                 detectDish('upload');
             }
-            
+
             reader.readAsDataURL(input.files[0]);
         }
     }
@@ -318,6 +415,27 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
+                    // 显示带标注的图片
+                    if (data.labeled_image_url) {
+                        // 停止摄像头
+                        stopCamera();
+
+                        // 清空预览区域并显示图片
+                        const imagePreview = document.getElementById('imagePreview');
+                        imagePreview.innerHTML = '';
+
+                        const img = document.createElement('img');
+                        img.src = data.labeled_image_url;
+                        img.style.maxWidth = '100%';
+                        img.style.maxHeight = '280px';
+                        img.style.objectFit = 'contain';
+                        img.style.borderRadius = '8px';
+                        imagePreview.appendChild(img);
+
+                        // 确保拍照按钮状态正确
+                        cameraBtn.innerHTML = '<i class="fas fa-camera me-1"></i>拍照';
+                    }
+
                     // 渲染识别结果
                     displayResults(data.results);
                 } else {
@@ -338,10 +456,16 @@
 
         // 遍历结果生成卡片
         results.forEach((dish, index) => {
+            const isUnknown = dish.has_db_data === false;
+
             // 根据菜品类型选择图标
             let iconClass = '';
             let iconColor = '';
-            if (dish.dish_name.includes('米饭') || dish.dish_name.includes('面') || dish.dish_name.includes('粉')) {
+
+            if (isUnknown) {
+                iconClass = 'fas fa-question';
+                iconColor = 'text-secondary';
+            } else if (dish.dish_name.includes('米饭') || dish.dish_name.includes('面') || dish.dish_name.includes('粉')) {
                 iconClass = 'fas fa-bread-slice';
                 iconColor = 'text-warning';
             } else if (dish.dish_name.includes('菜') || dish.dish_name.includes('汤')) {
@@ -355,8 +479,62 @@
                 iconColor = 'text-info';
             }
 
+            // 右侧操作区域
+            let actionHtml = '';
+            let nutritionInfoHtml = '';
+
+            if (isUnknown) {
+                actionHtml = `
+                    <button class="btn btn-sm btn-warning" onclick="handleUnknownClick(${index})">
+                        <i class="fas fa-edit me-1"></i>添加数据
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeDish(${index})"><i class="fas fa-trash"></i></button>
+                `;
+            } else {
+                // 计算当前重量下的热量
+                const calories = (dish.nutrition.calories * dish.weight / 100).toFixed(1);
+                nutritionInfoHtml = `<div class="text-xs text-muted mt-1"><i class="fas fa-fire text-warning me-1"></i>约 <span id="cal-${index}">${calories}</span> kcal</div>`;
+
+                // Determine display value and unit label
+                const isPieceDish = dish.unit_type === 'piece';
+                const isSliceDish = dish.unit_type === 'slice';
+                const isStickDish = dish.unit_type === 'stick';
+
+                let unitLabel = '克';
+                if (isPieceDish) {
+                    unitLabel = '个';
+                } else if (isSliceDish) {
+                    unitLabel = '片';
+                } else if (isStickDish) {
+                    unitLabel = '根';
+                }
+
+                let displayValue = dish.weight;
+
+                if ((isPieceDish || isSliceDish || isStickDish) && dish.unit_weight > 0) {
+                    displayValue = (dish.weight / dish.unit_weight).toFixed(1);
+                    // If close to integer, show integer
+                    if (Math.abs(displayValue - Math.round(displayValue)) < 0.1) {
+                        displayValue = Math.round(displayValue);
+                    }
+                }
+
+                actionHtml = `
+                    <div class="input-group" style="width: 120px;">
+                        <input type="number" 
+                               class="form-control form-control-sm" 
+                               value="${displayValue}" 
+                               min="0.1"
+                               step="${(isPieceDish || isSliceDish || isStickDish) ? '0.5' : '10'}"
+                               onchange="updateWeight(${index}, this.value)">
+                        <span class="input-group-text">${unitLabel}</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeDish(${index})"><i class="fas fa-trash"></i></button>
+                `;
+            }
+
             const card = `
-                <div class="card mb-3">
+                <div class="card mb-3 ${isUnknown ? 'border-warning' : ''}">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
@@ -364,22 +542,16 @@
                                     <i class="${iconClass} ${iconColor} fa-lg"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0">${dish.dish_name}</h6>
+                                    <h6 class="mb-0">
+                                        ${dish.dish_name}
+                                        ${isUnknown ? '<span class="badge bg-warning text-dark ms-2" style="font-size: 0.7em;">无数据</span>' : ''}
+                                    </h6>
                                     <div class="text-xs text-muted">置信度 ${(dish.confidence * 100).toFixed(1)}%</div>
+                                    ${nutritionInfoHtml}
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="input-group" style="width: 120px;">
-                                    <input type="number" 
-                                           class="form-control form-control-sm" 
-                                           value="${dish.weight}" 
-                                           min="1"
-                                           onchange="updateWeight(${index}, this.value)">
-                                    <span class="input-group-text">g</span>
-                                </div>
-                                <button class="btn btn-sm btn-outline-danger" onclick="removeDish(${index})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="d-flex align-items-center">
+                                ${actionHtml}
                             </div>
                         </div>
                     </div>
@@ -397,18 +569,43 @@
     // 更新菜品重量
     function updateWeight(index, value) {
         // 验证重量有效性
-        const weight = parseFloat(value);
-        if (isNaN(weight) || weight <= 0) {
-            alert('重量必须是大于0的数字！');
+        const val = parseFloat(value);
+        if (isNaN(val) || val <= 0) {
+            alert('数值必须大于0！');
             // 恢复原数值
+            const dish = currentDishes[index];
+            const isPieceDish = dish.unit_type === 'piece';
+            let displayValue = dish.weight;
+            if (isPieceDish && dish.unit_weight > 0) {
+                displayValue = (dish.weight / dish.unit_weight).toFixed(1);
+                if (Math.abs(displayValue - Math.round(displayValue)) < 0.1) displayValue = Math.round(displayValue);
+            }
+
             const inputs = document.querySelectorAll('#resultsContainer input');
             if (inputs[index]) {
-                inputs[index].value = currentDishes[index].weight;
+                inputs[index].value = displayValue;
             }
             return;
         }
+
+        const dish = currentDishes[index];
+        const isPieceDish = dish.unit_type === 'piece';
+        let newWeightInGrams = val;
+
+        if (isPieceDish) {
+            const uWeight = dish.unit_weight || 100;
+            newWeightInGrams = val * uWeight;
+        }
+
         // 更新重量
-        currentDishes[index].weight = weight;
+        currentDishes[index].weight = newWeightInGrams;
+
+        // Update displayed calories if element exists
+        const calSpan = document.getElementById(`cal-${index}`);
+        if (calSpan && currentDishes[index].nutrition) {
+            const calories = (currentDishes[index].nutrition.calories * newWeightInGrams / 100).toFixed(1);
+            calSpan.innerText = calories;
+        }
     }
 
     // 删除菜品
@@ -416,7 +613,7 @@
         currentDishes.splice(index, 1);
         // 重新渲染卡片
         displayResults(currentDishes);
-        
+
         // 如果没有菜品了，隐藏确认按钮
         if (currentDishes.length === 0) {
             document.getElementById('confirmResultsBtn').style.display = 'none';
@@ -427,12 +624,19 @@
 
     // 显示营养总结
     function showNutritionSummary() {
+        // Check for unknown dishes
+        const unknownDishes = currentDishes.filter(d => d.has_db_data === false);
+        if (unknownDishes.length > 0) {
+            alert(`发现 ${unknownDishes.length} 个菜品缺少营养数据。\n请先点击"添加数据"完善信息或删除这些菜品。`);
+            return;
+        }
+
         // 计算营养数据
         calculateNutrition(currentDishes);
-        
+
         // 显示营养总结区域
         document.getElementById('nutritionSummary').style.display = 'block';
-        
+
         // 滚动到营养总结区域
         document.getElementById('nutritionSummary').scrollIntoView({ behavior: 'smooth' });
     }
@@ -459,6 +663,21 @@
                 document.getElementById('totalProt').innerText = nutritionTotals.protein.toFixed(1);
                 document.getElementById('totalFat').innerText = nutritionTotals.fat.toFixed(1);
                 document.getElementById('totalCarb').innerText = nutritionTotals.carb.toFixed(1);
+
+                // 渲染菜品详情列表
+                const detailsTable = document.getElementById('dishDetailsTable');
+                if (detailsTable && data.details) {
+                    detailsTable.innerHTML = '';
+                    data.details.forEach(dish => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${dish.dish_name}</td>
+                            <td class="text-end">${dish.weight.toFixed(1)}</td>
+                            <td class="text-end">${dish.calories.toFixed(1)}</td>
+                        `;
+                        detailsTable.appendChild(row);
+                    });
+                }
             })
             .catch(err => {
                 alert('营养计算请求失败，请重试！');
@@ -480,6 +699,7 @@
             },
             body: JSON.stringify({
                 meal_type: document.getElementById('mealType').value,
+                date: document.getElementById('mealDate').value,
                 dish_list: currentDishes,
                 totals: nutritionTotals
             })
@@ -491,16 +711,16 @@
                     // 重置页面状态
                     currentDishes = [];
                     nutritionTotals = { calories: 0.0, protein: 0.0, fat: 0.0, carb: 0.0 };
-                    
+
                     // 重置UI
                     document.getElementById('emptyResults').style.display = 'flex';
                     document.getElementById('resultsContainer').style.display = 'none';
                     document.getElementById('confirmResultsBtn').style.display = 'none';
                     document.getElementById('nutritionSummary').style.display = 'none';
-                    
+
                     // 重置图片上传
                     document.getElementById('dishImage').value = '';
-                    
+
                     // 恢复默认预览
                     stopCamera();
                     cameraBtn.innerHTML = '<i class="fas fa-camera me-1"></i>拍照';

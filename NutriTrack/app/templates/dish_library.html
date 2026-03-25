@@ -4,158 +4,266 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="mb-3"><i class="fas fa-utensils me-2"></i>菜品库</h2>
-            <p class="text-muted">以下是系统中所有可用的菜品及其营养信息</p>
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="mb-1"><i class="fas fa-utensils me-2"></i>菜品库</h2>
+            <p class="text-muted mb-0">管理系统中所有可用的菜品及其营养信息</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('meal_track.add_dish') }}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>添加菜品
+            </a>
         </div>
     </div>
 
-    <!-- 菜品搜索和筛选 -->
+    <!-- 搜索和筛选 -->
     <div class="card mb-4">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" id="dishSearch" placeholder="搜索菜品名称...">
+            <form action="{{ url_for('meal_track.dish_library') }}" method="GET">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" name="q" placeholder="搜索菜品名称..."
+                                value="{{ search_query }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" name="cooking_method" onchange="this.form.submit()">
+                            <option value="">所有烹饪方式</option>
+                            {% for method in cooking_methods %}
+                            <option value="{{ method }}" {{ 'selected' if current_method==method else '' }}>{{ method }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-100">查询</button>
+                            <a href="{{ url_for('meal_track.dish_library') }}" class="btn btn-outline-secondary">重置</a>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <select class="form-select" id="sortOptions">
-                        <option value="name">按名称排序</option>
-                        <option value="calories">按热量排序</option>
-                        <option value="protein">按蛋白质排序</option>
-                    </select>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
     <!-- 菜品列表 -->
-    <div class="row" id="dishContainer">
+    <div class="row">
         {% for item in dishes %}
-        <div class="col-lg-4 col-md-6 mb-4 dish-item" data-name="{{ item.dish.name.lower() }}"
-            data-calories="{{ item.nutrition.calories }}" data-protein="{{ item.nutrition.protein }}">
+        <div class="col-lg-4 col-md-6 mb-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="card-title mb-0">{{ item.dish.name }}</h5>
-                        {% if item.dish.cooking_method %}
-                        <span class="badge bg-primary">{{ item.dish.cooking_method }}</span>
-                        {% else %}
-                        <span class="badge bg-secondary">未知</span>
-                        {% endif %}
+                        <h5 class="card-title mb-0 text-truncate" title="{{ item.dish.name }}">{{ item.dish.name }}</h5>
+                        <div class="d-flex gap-1 flex-wrap justify-content-end">
+                            {% if item.is_global %}
+                            <span class="badge bg-primary">全局</span>
+                            {% else %}
+                            <span class="badge bg-secondary">个人</span>
+                            {% endif %}
+                            {% if item.dish.cooking_method %}
+                            <span class="badge bg-info text-dark">{{ item.dish.cooking_method }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">未知</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 菜品类型信息 -->
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            类型:
+                            {% if item.dish.unit_type == 'piece' %}
+                            <span class="text-warning">按个</span>
+                            {% elif item.dish.unit_type == 'slice' %}
+                            <span class="text-warning">按片</span>
+                            {% elif item.dish.unit_type == 'stick' %}
+                            <span class="text-warning">按根</span>
+                            {% else %}
+                            <span class="text-success">按份</span>
+                            {% endif %}
+                            {% if item.dish.unit_weight %}
+                            ({{ item.dish.unit_weight }}g/
+                            {% if item.dish.unit_type == 'piece' %}个
+                            {% elif item.dish.unit_type == 'slice' %}片
+                            {% elif item.dish.unit_type == 'stick' %}根
+                            {% else %}份
+                            {% endif %})
+                            {% endif %}
+                        </small>
                     </div>
 
                     <!-- 营养信息概览 -->
-                    <div class="row text-center">
-                        <div class="col-3">
-                            <div class="small text-muted">热量</div>
-                            <div class="fw-bold text-success">{{ item.nutrition.calories }}<small>kcal</small></div>
+                    <div class="row text-center mb-3">
+                        <div class="col-3 px-1">
+                            <div class="small text-muted" style="font-size: 0.75rem;">热量</div>
+                            <div class="fw-bold text-success">{{ item.nutrition.calories }}</div>
                         </div>
-                        <div class="col-3">
-                            <div class="small text-muted">蛋白质</div>
-                            <div class="fw-bold">{{ item.nutrition.protein }}<small>g</small></div>
+                        <div class="col-3 px-1">
+                            <div class="small text-muted" style="font-size: 0.75rem;">蛋白质</div>
+                            <div class="fw-bold">{{ item.nutrition.protein }}</div>
                         </div>
-                        <div class="col-3">
-                            <div class="small text-muted">脂肪</div>
-                            <div class="fw-bold">{{ item.nutrition.fat }}<small>g</small></div>
+                        <div class="col-3 px-1">
+                            <div class="small text-muted" style="font-size: 0.75rem;">脂肪</div>
+                            <div class="fw-bold">{{ item.nutrition.fat }}</div>
                         </div>
-                        <div class="col-3">
-                            <div class="small text-muted">碳水</div>
-                            <div class="fw-bold">{{ item.nutrition.carb }}<small>g</small></div>
+                        <div class="col-3 px-1">
+                            <div class="small text-muted" style="font-size: 0.75rem;">碳水</div>
+                            <div class="fw-bold">{{ item.nutrition.carb }}</div>
                         </div>
                     </div>
 
-                    <!-- 每100g营养详情 -->
-                    <div class="mt-3 small">
-                        <div class="d-flex justify-content-between">
-                            <span>每100g营养成分：</span>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between align-items-center">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted">我的评分：</span>
+                            <button type="button"
+                                    class="btn btn-xs btn-outline-success dish-rate-btn"
+                                    data-dish-id="{{ item.dish.dish_id }}"
+                                    data-rating="1"
+                                    title="喜欢这道菜">
+                                <i class="fas fa-thumbs-up"></i>
+                            </button>
+                            <button type="button"
+                                    class="btn btn-xs btn-outline-secondary dish-rate-btn"
+                                    data-dish-id="{{ item.dish.dish_id }}"
+                                    data-rating="0"
+                                    title="一般/清除评分">
+                                <i class="fas fa-circle"></i>
+                            </button>
+                            <button type="button"
+                                    class="btn btn-xs btn-outline-danger dish-rate-btn"
+                                    data-dish-id="{{ item.dish.dish_id }}"
+                                    data-rating="-1"
+                                    title="不喜欢这道菜">
+                                <i class="fas fa-thumbs-down"></i>
+                            </button>
                         </div>
-                        <div class="d-flex justify-content-between mt-1">
-                            <span>热量：</span>
-                            <span class="text-success">{{ item.nutrition.calories }} kcal</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>蛋白质：</span>
-                            <span>{{ item.nutrition.protein }} g</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>脂肪：</span>
-                            <span>{{ item.nutrition.fat }} g</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>碳水化合物：</span>
-                            <span>{{ item.nutrition.carb }} g</span>
+
+                        <div class="d-flex align-items-center gap-2">
+                            {% if is_admin %}
+                            <a href="{{ url_for('admin.dish_structure', dish=item.dish.name) }}"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-chart-line"></i> 销量曲线
+                            </a>
+                            {% endif %}
+
+                            {% if item.can_edit %}
+                            <a href="{{ url_for('meal_track.edit_dish', dish_id=item.dish.dish_id) }}"
+                                class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> 编辑
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="confirmDelete('{{ item.dish.dish_id }}', '{{ item.dish.name }}')">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                            {% else %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-lock me-1"></i>无权限编辑</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">未找到相关菜品</h4>
+                <p class="text-muted">您可以尝试调整筛选条件或添加新菜品</p>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- 无结果提示 -->
-    <div class="text-center py-5" id="noResults" style="display: none;">
-        <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
-        <h4 class="text-muted">未找到相关菜品</h4>
-        <p class="text-muted">请尝试其他关键词搜索</p>
+    <!-- 分页 -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                <a class="page-link"
+                    href="{{ url_for('meal_track.dish_library', page=pagination.prev_num, q=search_query, cooking_method=current_method) if pagination.has_prev else '#' }}">上一页</a>
+            </li>
+
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+            <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                <a class="page-link"
+                    href="{{ url_for('meal_track.dish_library', page=page_num, q=search_query, cooking_method=current_method) }}">{{
+                    page_num }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+            {% endfor %}
+
+            <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                <a class="page-link"
+                    href="{{ url_for('meal_track.dish_library', page=pagination.next_num, q=search_query, cooking_method=current_method) if pagination.has_next else '#' }}">下一页</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除菜品 "<span id="deleteDishName" class="fw-bold"></span>" 吗？
+                <br>
+                <small class="text-danger">此操作不可恢复，且会删除相关的配料信息。</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form id="deleteForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">删除</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // 搜索功能
-    document.getElementById('dishSearch').addEventListener('input', function () {
-        const searchTerm = this.value.toLowerCase();
-        const dishItems = document.querySelectorAll('.dish-item');
-        let hasResults = false;
+    function confirmDelete(dishId, dishName) {
+        document.getElementById('deleteDishName').innerText = dishName;
+        document.getElementById('deleteForm').action = "{{ url_for('meal_track.delete_dish', dish_id='placeholder') }}".replace('placeholder', dishId);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
 
-        dishItems.forEach(item => {
-            const dishName = item.getAttribute('data-name');
-            if (dishName.includes(searchTerm)) {
-                item.style.display = 'block';
-                hasResults = true;
-            } else {
-                item.style.display = 'none';
-            }
+    // 菜品库中的评分按钮（同样写入 dish_ratings 表）
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.dish-rate-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const dishId = this.getAttribute('data-dish-id');
+                const rating = parseInt(this.getAttribute('data-rating'));
+                if (!dishId) return;
+
+                fetch("{{ url_for('dashboard.rate_dish') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dish_id: dishId, rating: rating })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status !== 'success') {
+                            alert(data.message || '评分失败，请稍后重试。');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('评分请求失败，请稍后重试。');
+                    });
+            });
         });
-
-        // 显示/隐藏无结果提示
-        document.getElementById('noResults').style.display = hasResults ? 'none' : 'block';
-    });
-
-    // 排序功能
-    document.getElementById('sortOptions').addEventListener('change', function () {
-        const sortBy = this.value;
-        const container = document.getElementById('dishContainer');
-        const dishItems = Array.from(container.querySelectorAll('.dish-item'));
-
-        dishItems.sort((a, b) => {
-            let aValue, bValue;
-
-            switch (sortBy) {
-                case 'name':
-                    aValue = a.getAttribute('data-name');
-                    bValue = b.getAttribute('data-name');
-                    return aValue.localeCompare(bValue);
-                case 'calories':
-                    aValue = parseFloat(a.getAttribute('data-calories')) || 0;
-                    bValue = parseFloat(b.getAttribute('data-calories')) || 0;
-                    return bValue - aValue; // 降序
-                case 'protein':
-                    aValue = parseFloat(a.getAttribute('data-protein')) || 0;
-                    bValue = parseFloat(b.getAttribute('data-protein')) || 0;
-                    return bValue - aValue; // 降序
-                default:
-                    return 0;
-            }
-        });
-
-        // 重新排列元素
-        dishItems.forEach(item => container.appendChild(item));
     });
 </script>
 {% endblock %}

@@ -56,6 +56,11 @@ def update_info():
         if weight:
             user.weight = float(weight)
 
+        # 更新运动频率
+        exercise_frequency = request.form.get('exercise_frequency')
+        if exercise_frequency:
+            user.exercise_frequency = exercise_frequency
+
         # 重新计算BMI
         if user.height and user.weight:
             user.bmi = round(user.weight / ((user.height / 100) ** 2), 2)

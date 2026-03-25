@@ -33,6 +33,9 @@ def test_yolo_model():
     try:
         # 读取图片
         img = cv2.imread(TEST_IMAGE_PATH)
+        # 确保图像数组是可写的，避免OpenCV只读错误
+        if not img.flags.writeable:
+            img = img.copy()
         # 模型预测
         results = model(img, conf=CONF_THRESHOLD)  # conf指定置信度阈值
         print(f"\n✅ 识别完成！共检测到 {len(results[0].boxes)} 个目标")

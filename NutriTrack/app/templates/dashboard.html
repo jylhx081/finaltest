@@ -44,12 +44,9 @@
 
                 <p class="mb-1">蛋白质: {{ today_nutrition.protein | round(1) }}g</p>
                 <div class="progress mb-3" style="height: 10px;">
-                    {% if nutrition_needs and nutrition_needs.protein > 0 %}
                     {% set protein_percent = nutrition_percents.protein if nutrition_percents else 0 %}
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ protein_percent }}%"></div>
-                    {% else %}
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
-                    {% endif %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ protein_percent }}%" 
+                         aria-valuenow="{{ protein_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 {% if nutrition_needs %}
                 <p class="small text-muted mb-2">目标: {{ nutrition_needs.protein }}g | 还需: {{ nutrition_gaps.protein }}g
@@ -58,12 +55,9 @@
 
                 <p class="mb-1">脂肪: {{ today_nutrition.fat | round(1) }}g</p>
                 <div class="progress mb-3" style="height: 10px;">
-                    {% if nutrition_needs and nutrition_needs.fat > 0 %}
                     {% set fat_percent = nutrition_percents.fat if nutrition_percents else 0 %}
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ fat_percent }}%"></div>
-                    {% else %}
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
-                    {% endif %}
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ fat_percent }}%"
+                         aria-valuenow="{{ fat_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 {% if nutrition_needs %}
                 <p class="small text-muted mb-2">目标: {{ nutrition_needs.fat }}g | 还需: {{ nutrition_gaps.fat }}g</p>
@@ -71,12 +65,9 @@
 
                 <p class="mb-1">碳水化合物: {{ today_nutrition.carb | round(1) }}g</p>
                 <div class="progress mb-3" style="height: 10px;">
-                    {% if nutrition_needs and nutrition_needs.carb > 0 %}
                     {% set carb_percent = nutrition_percents.carb if nutrition_percents else 0 %}
-                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ carb_percent }}%"></div>
-                    {% else %}
-                    <div class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
-                    {% endif %}
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ carb_percent }}%"
+                         aria-valuenow="{{ carb_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 {% if nutrition_needs %}
                 <p class="small text-muted mb-2">目标: {{ nutrition_needs.carb }}g | 还需: {{ nutrition_gaps.carb }}g</p>
@@ -165,7 +156,11 @@
                         class="btn btn-sm btn-outline-secondary me-2">
                         <i class="fas fa-arrow-left"></i>
                     </a>
-                    <h4 class="mb-0 mx-2">{{ today_date }}</h4>
+                    <form action="{{ url_for('dashboard.index') }}" method="GET" class="d-inline-block">
+                        <input type="date" name="date" class="form-control form-control-sm mx-2 fw-bold text-center" 
+                               style="width: 150px; border: 1px solid #ced4da; background-color: #fff;" 
+                               value="{{ today_date }}" onchange="this.form.submit()">
+                    </form>
                     <a href="{{ url_for('dashboard.index', date=next_date.strftime('%Y-%m-%d')) }}"
                         class="btn btn-sm btn-outline-secondary ms-2">
                         <i class="fas fa-arrow-right"></i>
@@ -190,31 +185,64 @@
             <div class="card-body">
                 {% if meals[meal_type] %}
                 {% for record in meals[meal_type] %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        {% for dish in record.get_dish_list() %}
-                        <span class="badge bg-light text-dark border me-1">{{ dish.dish_name }} ({{ dish.weight
-                            }}g)</span>
-                        {% endfor %}
-                    </div>
-                    <div class="text-end">
-                        <span class="fw-bold text-success">{{ record.total_calorie }} kcal</span>
-                        <div class="text-muted small" style="font-size: 0.8rem;">
-                            P: {{ record.total_protein }}g | F: {{ record.total_fat }}g | C: {{ record.total_carb }}g
+                <div class="meal-record-item border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            {% for dish in record.get_dish_list() %}
+                            {% set unit_label = 'g' %}
+                            {% set display_weight = dish.weight %}
+                            {% if dish.unit_type == 'piece' %}
+                                {% set unit_label = '个' %}
+                                {% if dish.unit_weight and dish.unit_weight > 0 %}
+                                    {% set display_weight = (dish.weight / dish.unit_weight) | round(1) %}
+                                    {% if (display_weight - display_weight|int)|abs < 0.1 %}
+                                        {% set display_weight = display_weight|int %}
+                                    {% endif %}
+                                {% endif %}
+                            {% elif dish.unit_type == 'slice' %}
+                                {% set unit_label = '片' %}
+                                {% if dish.unit_weight and dish.unit_weight > 0 %}
+                                    {% set display_weight = (dish.weight / dish.unit_weight) | round(1) %}
+                                    {% if (display_weight - display_weight|int)|abs < 0.1 %}
+                                        {% set display_weight = display_weight|int %}
+                                    {% endif %}
+                                {% endif %}
+                            {% elif dish.unit_type == 'stick' %}
+                                {% set unit_label = '根' %}
+                                {% if dish.unit_weight and dish.unit_weight > 0 %}
+                                    {% set display_weight = (dish.weight / dish.unit_weight) | round(1) %}
+                                    {% if (display_weight - display_weight|int)|abs < 0.1 %}
+                                        {% set display_weight = display_weight|int %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                            <span class="badge bg-light text-dark border me-1">{{ dish.dish_name }} ({{ display_weight }}{{ unit_label }})</span>
+                            {% endfor %}
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold text-success">{{ record.total_calorie }} kcal</span>
+                            <div class="text-muted small" style="font-size: 0.8rem;">
+                                P: {{ record.total_protein }}g | F: {{ record.total_fat }}g | C: {{ record.total_carb }}g
+                            </div>
                         </div>
                     </div>
+                    <div class="d-flex justify-content-end align-items-center">
+                        <small class="text-muted me-2">记录时间: {{ record.create_time.strftime('%H:%M') }}</small>
+                        <button class="btn btn-sm btn-outline-danger delete-record-btn" data-record-id="{{ record.id }}">
+                            <i class="fas fa-trash me-1"></i>删除
+                        </button>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-end mb-2">
-                    <small class="text-muted me-2">记录时间: {{ record.create_time.strftime('%H:%M') }}</small>
-                    <button class="btn btn-sm btn-outline-danger delete-record-btn" data-record-id="{{ record.id }}">
-                        <i class="fas fa-trash me-1"></i>删除
-                    </button>
-                </div>
-                {% if not loop.last %}
-                <hr class="my-2">{% endif %}
                 {% endfor %}
+                <style>
+                    .meal-record-item:last-child {
+                        border-bottom: none !important;
+                        margin-bottom: 0 !important;
+                        padding-bottom: 0 !important;
+                    }
+                </style>
                 {% else %}
-                <p class="text-muted mb-0 text-center py-2">暂无记录</p>
+                <p class="text-muted mb-0 text-center py-2" id="no-record-msg-{{ meal_type }}">暂无记录</p>
                 {% endif %}
             </div>
         </div>
@@ -226,151 +254,127 @@
                 <strong><i class="fas fa-lightbulb me-2 text-warning"></i>营养缺口与推荐</strong>
             </div>
             <div class="card-body">
-                {% if nutrition_gaps and (nutrition_gaps.protein > 0 or nutrition_gaps.fat > 0 or nutrition_gaps.carb >
-                0) %}
-                <h6 class="mb-3">今日营养缺口：</h6>
-                <div class="row mb-4">
-                    {% if nutrition_gaps.protein > 0 %}
-                    <div class="col-md-4 mb-2">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
-                                style="width: 30px; height: 30px;">
-                                <span class="text-primary">P</span>
-                            </div>
-                            <span>蛋白质还需 {{ nutrition_gaps.protein }}g</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if nutrition_gaps.fat > 0 %}
-                    <div class="col-md-4 mb-2">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
-                                style="width: 30px; height: 30px;">
-                                <span class="text-warning">F</span>
-                            </div>
-                            <span>脂肪还需 {{ nutrition_gaps.fat }}g</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if nutrition_gaps.carb > 0 %}
-                    <div class="col-md-4 mb-2">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
-                                style="width: 30px; height: 30px;">
-                                <span class="text-info">C</span>
-                            </div>
-                            <span>碳水还需 {{ nutrition_gaps.carb }}g</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- 菜品推荐 -->
-                <h6 class="mb-3">推荐菜品：</h6>
+                {% if nutrition_gaps %}
                 <div class="row">
-                    {% set next_meal_type = 1 %}
-                    {% if meals[1] %}
-                    {% set next_meal_type = 2 %}
-                    {% endif %}
-                    {% if meals[2] %}
-                    {% set next_meal_type = 3 %}
-                    {% endif %}
-
-                    {% if next_meal_type == 1 %}
-                    {% set meal_name = "早餐" %}
-                    {% elif next_meal_type == 2 %}
-                    {% set meal_name = "午餐" %}
-                    {% else %}
-                    {% set meal_name = "晚餐" %}
-                    {% endif %}
-
+                    <!-- Right: Recommendations -->
                     <div class="col-12">
-                        <p class="text-muted small mb-2">根据您的营养缺口和{{ meal_name }}需求，推荐以下菜品：</p>
-                    </div>
-
-                    <!-- 根据健康目标和营养缺口推荐菜品 -->
-                    {% if current_user.health_goal == '减脂' %}
-                    {% if nutrition_gaps.protein > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-drumstick-bite text-danger me-2"></i>
-                            <span>鸡胸肉（高蛋白低脂肪）</span>
+                        <h6 class="mb-3 d-flex justify-content-between align-items-center">
+                            <span>为您推荐</span>
+                            <small class="text-muted fw-normal">基于缺口与口味</small>
+                        </h6>
+                        
+                        {% if recommendations %}
+                        <div class="d-flex overflow-auto pb-3" style="gap: 15px;">
+                            {% for dish in recommendations %}
+                            <div class="card flex-shrink-0 shadow-sm border-0" style="width: 200px; background-color: #f8f9fa;">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title text-truncate mb-2" title="{{ dish.name }}">{{ dish.name }}</h6>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary rounded-pill">{{ dish.calories|int }} kcal</span>
+                                    </div>
+                                    <div class="small text-muted mb-2" style="font-size: 0.8rem;">
+                                        <div class="row g-0 text-center">
+                                            <div class="col-4 border-end" title="蛋白质">P:{{ dish.protein|round(0)|int }}</div>
+                                            <div class="col-4 border-end" title="脂肪">F:{{ dish.fat|round(0)|int }}</div>
+                                            <div class="col-4" title="碳水">C:{{ dish.carbs|round(0)|int }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-top">
+                                        <small class="text-primary d-block text-truncate" title="{{ dish.recommendation_reason }}">
+                                            <i class="fas fa-thumbs-up me-1"></i>{{ dish.recommendation_reason }}
+                                        </small>
+                                        <div class="mt-1 d-flex justify-content-end gap-1">
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-success dish-rate-btn"
+                                                    data-dish-id="{{ dish.id }}"
+                                                    data-rating="1"
+                                                    title="喜欢这道菜">
+                                                <i class="fas fa-thumbs-up"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-secondary dish-rate-btn"
+                                                    data-dish-id="{{ dish.id }}"
+                                                    data-rating="0"
+                                                    title="一般/清除评分">
+                                                <i class="fas fa-circle"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-danger dish-rate-btn"
+                                                    data-dish-id="{{ dish.id }}"
+                                                    data-rating="-1"
+                                                    title="不喜欢这道菜">
+                                                <i class="fas fa-thumbs-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-fish text-info me-2"></i>
-                            <span>清蒸鲈鱼（优质蛋白）</span>
+                        {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-utensils fa-2x mb-3 text-secondary"></i>
+                            <p>暂无合适推荐，请先完善个人资料或稍后再试。</p>
                         </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
-                    {% if nutrition_gaps.carb > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-seedling text-success me-2"></i>
-                            <span>燕麦粥（低GI碳水）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% elif current_user.health_goal == '增肌' %}
-                    {% if nutrition_gaps.protein > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-drumstick-bite text-danger me-2"></i>
-                            <span>牛肉（高蛋白高铁）</span>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-egg text-warning me-2"></i>
-                            <span>鸡蛋（完整氨基酸）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if nutrition_gaps.carb > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-bread-slice text-warning me-2"></i>
-                            <span>全麦面包（复合碳水）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% else %}
-                    <!-- 默认推荐 -->
-                    {% if nutrition_gaps.protein > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-drumstick-bite text-danger me-2"></i>
-                            <span>瘦肉（优质蛋白）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if nutrition_gaps.carb > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-carrot text-success me-2"></i>
-                            <span>糙米（复合碳水）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if nutrition_gaps.fat > 0 %}
-                    <div class="col-md-6 mb-2">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-apple-alt text-warning me-2"></i>
-                            <span>坚果（健康脂肪）</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endif %}
                 </div>
                 {% else %}
-                <div class="text-center py-3">
-                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
-                    <p class="mb-0">恭喜！今日营养摄入充足</p>
-                    <p class="text-muted small mb-0">继续保持良好的饮食习惯</p>
+                <div class="text-center py-4">
+                    <p class="text-muted">请先完善个人信息（身高、体重、年龄）以获取营养分析。</p>
+                    <a href="{{ url_for('profile.index') }}" class="btn btn-primary btn-sm">去完善信息</a>
                 </div>
                 {% endif %}
             </div>
+        </div>
+
+        <!-- 用户反馈 -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong><i class="fas fa-comment-dots me-2 text-primary"></i>用餐反馈</strong>
+                <small class="text-muted">欢迎告诉我们您对菜品和推荐的真实感受</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <textarea id="feedbackContent" class="form-control" rows="3"
+                              placeholder="例如：今天的菜品口味如何？推荐是否符合你的期望？有没有想吐槽或表扬的地方？"></textarea>
+                </div>
+                <button id="feedbackSubmitBtn" class="btn btn-sm btn-primary">
+                    <i class="fas fa-paper-plane me-1"></i>提交反馈
+                </button>
+                <small id="feedbackHint" class="text-muted ms-2" style="display:none;"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 固定在仪表盘右下角的 AI 对话卡片 -->
+<button id="aiChatToggle" class="btn btn-primary shadow-lg"
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 1050;">
+    <i class="fas fa-robot me-1"></i> AI营养助手
+</button>
+
+<div id="aiChatPanel" class="card shadow-lg"
+     style="position: fixed; bottom: 80px; right: 20px; width: 320px; max-height: 420px;
+            display: none; z-index: 1050;">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+        <span><i class="fas fa-robot me-1"></i>AI 营养搭配助手</span>
+        <button type="button" class="btn btn-sm btn-light" id="aiChatClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="card-body p-2" style="background-color: #f8f9fa;">
+        <div id="aiChatMessages"
+             style="height: 260px; overflow-y: auto; padding-right: 4px; font-size: 0.85rem;"></div>
+    </div>
+    <div class="card-footer p-2">
+        <div class="input-group input-group-sm">
+            <textarea id="aiChatInput" class="form-control" rows="2"
+                      placeholder="例如：请帮我搭配一荤两素、营养均衡的一餐…"
+                      style="resize: none;"></textarea>
+            <button class="btn btn-primary" id="aiChatSend">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
     </div>
 </div>
@@ -385,7 +389,8 @@
         deleteButtons.forEach(button => {
             button.addEventListener('click', function () {
                 const recordId = this.getAttribute('data-record-id');
-                const mealCard = this.closest('.card');
+                const recordItem = this.closest('.meal-record-item');
+                const cardBody = this.closest('.card-body');
 
                 if (confirm('确定要删除这条用餐记录吗？')) {
                     fetch(`/meal/delete_record/${recordId}`, {
@@ -398,13 +403,13 @@
                         .then(data => {
                             if (data.status === 'success') {
                                 // 从页面中移除该记录
-                                mealCard.remove();
+                                recordItem.remove();
                                 alert('记录删除成功！');
 
                                 // 如果该餐类下没有更多记录，显示"暂无记录"
-                                const mealBody = mealCard.querySelector('.card-body');
-                                if (mealBody.children.length === 0) {
-                                    mealBody.innerHTML = '<p class="text-muted mb-0 text-center py-2">暂无记录</p>';
+                                const remainingItems = cardBody.querySelectorAll('.meal-record-item');
+                                if (remainingItems.length === 0) {
+                                    cardBody.innerHTML = '<p class="text-muted mb-0 text-center py-2">暂无记录</p>';
                                 }
                             } else {
                                 alert('删除失败：' + data.message);
@@ -415,6 +420,174 @@
                             alert('删除请求失败，请稍后重试');
                         });
                 }
+            });
+        });
+    });
+
+    // 提交用户反馈
+    document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('feedbackSubmitBtn');
+        const textarea = document.getElementById('feedbackContent');
+        const hint = document.getElementById('feedbackHint');
+
+        if (btn && textarea) {
+            btn.addEventListener('click', function () {
+                const content = textarea.value.trim();
+                if (!content) {
+                    alert('请先填写反馈内容~');
+                    return;
+                }
+
+                fetch("{{ url_for('dashboard.submit_feedback') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            textarea.value = '';
+                            hint.style.display = 'inline';
+                            hint.innerText = '感谢您的反馈！';
+                            setTimeout(() => { hint.style.display = 'none'; }, 3000);
+                        } else {
+                            alert(data.message || '反馈提交失败，请稍后重试。');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('反馈提交失败，请稍后重试。');
+                    });
+            });
+        }
+    });
+
+    // AI 对话卡片
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('aiChatToggle');
+        const panel = document.getElementById('aiChatPanel');
+        const closeBtn = document.getElementById('aiChatClose');
+        const input = document.getElementById('aiChatInput');
+        const sendBtn = document.getElementById('aiChatSend');
+        const messagesDiv = document.getElementById('aiChatMessages');
+
+        function appendMessage(role, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mb-2 d-flex';
+            const bubble = document.createElement('div');
+            bubble.className = 'p-2 rounded';
+            bubble.style.whiteSpace = 'pre-wrap';
+            bubble.style.maxWidth = '85%';
+
+            if (role === 'user') {
+                wrapper.classList.add('justify-content-end');
+                bubble.classList.add('bg-primary', 'text-white');
+            } else {
+                wrapper.classList.add('justify-content-start');
+                bubble.classList.add('bg-white', 'border');
+            }
+            bubble.textContent = text;
+            wrapper.appendChild(bubble);
+            messagesDiv.appendChild(wrapper);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function setLoading(loading) {
+            sendBtn.disabled = loading;
+            input.disabled = loading;
+        }
+
+        if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', function () {
+                const isHidden = panel.style.display === 'none' || panel.style.display === '';
+                panel.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+
+        if (closeBtn && panel) {
+            closeBtn.addEventListener('click', function () {
+                panel.style.display = 'none';
+            });
+        }
+
+        function sendPrompt() {
+            const text = (input.value || '').trim();
+            if (!text) {
+                alert('请输入你想咨询的问题，例如：请帮我搭配一荤两素的一餐。');
+                return;
+            }
+
+            appendMessage('user', text);
+            input.value = '';
+            setLoading(true);
+            appendMessage('assistant', '正在思考搭配方案，请稍候…');
+
+            fetch("{{ url_for('dashboard.ai_recommend') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: text })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    // 删除刚才的“正在思考”提示（最后一条 AI 消息）
+                    const nodes = messagesDiv.querySelectorAll('div.d-flex');
+                    if (nodes.length > 0) {
+                        const last = nodes[nodes.length - 1];
+                        if (last.textContent.indexOf('正在思考搭配方案') !== -1) {
+                            last.remove();
+                        }
+                    }
+
+                    if (data.status === 'success') {
+                        appendMessage('assistant', data.reply);
+                    } else {
+                        appendMessage('assistant', data.message || 'AI 服务暂时不可用，请稍后再试。');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    appendMessage('assistant', '调用 AI 接口失败，请稍后再试。');
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+        }
+
+        if (sendBtn && input) {
+            sendBtn.addEventListener('click', sendPrompt);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendPrompt();
+                }
+            });
+        }
+    });
+
+    // 菜品点赞/点踩评分（-1,0,1）
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.dish-rate-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const dishId = this.getAttribute('data-dish-id');
+                const rating = parseInt(this.getAttribute('data-rating'));
+                if (!dishId) return;
+
+                fetch("{{ url_for('dashboard.rate_dish') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dish_id: dishId, rating: rating })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status !== 'success') {
+                            alert(data.message || '评分失败，请稍后重试。');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('评分请求失败，请稍后重试。');
+                    });
             });
         });
     });
